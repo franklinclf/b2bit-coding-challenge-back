@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "CineReserve"
+version = "0.1.0"
+description = ""
+authors = ["franklinclf <franklin.oliveira.049@ufrn.edu.br>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.14"
+django = "^6.0.3"
+jwt = "^1.4.0"
+drf-spectacular = "^0.29.0"
+drf-spectacular-sidecar = "^2026.3.1"
+redis = "^7.3.0"
+hiredis = "^3.3.1"
+django-redis = "^6.0.0"
+psycopg = "^3.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
