@@ -1,0 +1,129 @@
+services:
+  cine-reserve:
+    container_name: cine-reserve
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    env_file:
+      - .env.example
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-key-for-dev-only-change-in-production}
+      - DEBUG=${DEBUG:-True}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-cine_reserve_db}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,cine-reserve}
+      - RUN_MIGRATIONS=true
+      - CREATE_SUPERUSER=${CREATE_SUPERUSER:-false}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cine-network
+
+  postgres:
+    container_name: postgres
+    image: postgres:16-alpine
+    user: postgres
+    env_file:
+      - .env.example
+    environment:
+        - POSTGRES_USER=${POSTGRES_USER:-postgres}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+        - POSTGRES_DB=${POSTGRES_DB:-cine_reserve_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    networks:
+      - cine-network
+
+  redis:
+    container_name: redis
+    image: redis:8-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - cine-network
+
+  celery:
+    container_name: celery
+    build: .
+    command: celery -A CineReserve worker -l info
+    env_file:
+      - .env.example
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-key-for-dev-only-change-in-production}
+      - DEBUG=${DEBUG:-True}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-cine_reserve_db}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,cine-reserve}
+      - RUN_MIGRATIONS=false
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - cine-network
+
+  celery-beat:
+    container_name: celery-beat
+    build: .
+    command: celery -A CineReserve beat -l info
+    env_file:
+      - .env.example
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-key-for-dev-only-change-in-production}
+      - DEBUG=${DEBUG:-True}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-cine_reserve_db}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,cine-reserve}
+      - RUN_MIGRATIONS=false
+    depends_on:
+      - redis
+      - postgres
+      - cine-reserve
+    networks:
+      - cine-network
+
+  flower:
+    container_name: flower
+    build: .
+    command: celery -A CineReserve flower
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env.example
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-key-for-dev-only-change-in-production}
+      - DEBUG=${DEBUG:-True}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,cine-reserve}
+      - RUN_MIGRATIONS=false
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - cine-network
+
+volumes:
+  pgdata:
+
+networks:
+  cine-network:
+    name: cine-network

@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "CineReserve API",
+    "_postman_id": "f6bd29fa-3f0c-4f06-b2e5-e2de88f3ea07",
+    "description": "Colecao para autenticacao, filmes, sessoes, reserva de assentos, checkout e meu portal.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Cadastro",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"username\": \"user\",\n  \"password\": \"StrongPass123!\",\n  \"password_confirm\": \"StrongPass123!\"\n}"
+        },
+        "url": "{{base_url}}/api/auth/register/"
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+        },
+        "url": "{{base_url}}/api/auth/login/"
+      }
+    },
+    {
+      "name": "Filmes - Listar",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/movies/"
+      }
+    },
+    {
+      "name": "Sessoes - Mapa de Assentos",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/sessions/{{session_id}}/seat-map/"
+      }
+    },
+    {
+      "name": "Sessoes - Reservar Assento",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": "{{base_url}}/api/sessions/{{session_id}}/seats/{{seat_id}}/reserve/"
+      }
+    },
+    {
+      "name": "Tickets - Checkout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"session_id\": {{session_id}},\n  \"seat_ids\": [{{seat_id}}]\n}"
+        },
+        "url": "{{base_url}}/api/tickets/checkout/"
+      }
+    },
+    {
+      "name": "Tickets - Meu Portal",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": "{{base_url}}/api/tickets/my-tickets/?type=active"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "access_token", "value": "" },
+    { "key": "session_id", "value": "1" },
+    { "key": "seat_id", "value": "1" }
+  ]
+}
+

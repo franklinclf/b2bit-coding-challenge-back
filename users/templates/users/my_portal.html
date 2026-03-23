@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineReserve - Portal de Testes</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 980px; margin: 24px auto; padding: 0 12px; }
+    h1 { margin-bottom: 8px; }
+    h2 { margin: 0 0 10px; }
+    .card { border: 1px solid #d0d7de; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    input, button, select { padding: 8px; border-radius: 6px; border: 1px solid #c2c2c2; }
+    input { min-width: 230px; }
+    button { cursor: pointer; background: #0b5fff; color: white; border: none; }
+    button.secondary { background: #4b5563; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow: auto; }
+    .small { color: #4b5563; font-size: 0.92rem; }
+    .status { font-weight: 700; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.85rem; color: #374151; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Portal de Testes</h1>
+  <p class="small">Painel para validar os casos de uso principais da API sem precisar de cliente externo.</p>
+
+  <div class="card">
+    <h2>1) Cadastro rapido (opcional)</h2>
+    <div class="row">
+      <div class="field">
+        <label for="regEmail">Email</label>
+        <input id="regEmail" type="email" placeholder="email" value="user@example.com" />
+      </div>
+      <div class="field">
+        <label for="regUsername">Username</label>
+        <input id="regUsername" type="text" placeholder="username" value="user" />
+      </div>
+      <div class="field">
+        <label for="regPassword">Senha</label>
+        <input id="regPassword" type="password" placeholder="senha" value="StrongPass123!" />
+      </div>
+      <button id="registerBtn">Cadastrar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2) Login</h2>
+    <div class="row">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="email" value="user@example.com" />
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input id="password" type="password" placeholder="senha" value="StrongPass123!" />
+      </div>
+      <button id="loginBtn">Entrar</button>
+      <button id="refreshBtn" class="secondary">Atualizar token</button>
+      <button id="logoutBtn" class="secondary">Sair</button>
+    </div>
+    <p class="small">Estado da sessao: <span id="sessionStatus" class="status">desconectado</span></p>
+  </div>
+
+  <div class="card">
+    <h2>3) Sessao</h2>
+    <div class="row">
+      <button id="verifyTokenBtn" class="secondary">Verificar token</button>
+      <button id="profileBtn" class="secondary">Ver perfil</button>
+      <button id="mockDataBtn" class="secondary">Mostrar mock de referencia</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>4) Filmes e sessoes</h2>
+      <div class="row">
+        <button id="moviesBtn">Listar filmes</button>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="movieId">movie_id</label>
+          <input id="movieId" type="number" placeholder="1" />
+        </div>
+        <button id="sessionsByMovieBtn">Listar sessoes do filme</button>
+      </div>
+      <div class="row">
+        <button id="allSessionsBtn" class="secondary">Listar todas as sessoes</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>5) Assentos e checkout</h2>
+      <div class="row">
+        <div class="field">
+          <label for="sessionId">session_id</label>
+          <input id="sessionId" type="number" placeholder="1" />
+        </div>
+        <button id="seatMapBtn">Ver mapa de assentos</button>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="seatId">seat_id</label>
+          <input id="seatId" type="number" placeholder="1" />
+        </div>
+        <button id="reserveBtn">Reservar assento</button>
+        <button id="releaseBtn" class="secondary">Liberar assento</button>
+      </div>
+      <div class="row">
+        <button id="checkoutBtn">Checkout (1 assento)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>6) My Tickets</h2>
+    <div class="row">
+      <div class="field">
+        <label for="ticketType">Filtro</label>
+        <select id="ticketType">
+          <option value="active">Ativos</option>
+          <option value="history">Historico</option>
+        </select>
+      </div>
+      <button id="loadTicketsBtn">Carregar tickets</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Resposta</h2>
+    <pre id="output">Sem dados</pre>
+  </div>
+
+  <script>
+    let accessToken = '';
+    let refreshToken = '';
+
+    const output = document.getElementById('output');
+    const sessionStatus = document.getElementById('sessionStatus');
+    const registerBtn = document.getElementById('registerBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const verifyTokenBtn = document.getElementById('verifyTokenBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    const mockDataBtn = document.getElementById('mockDataBtn');
+    const moviesBtn = document.getElementById('moviesBtn');
+    const sessionsByMovieBtn = document.getElementById('sessionsByMovieBtn');
+    const allSessionsBtn = document.getElementById('allSessionsBtn');
+    const seatMapBtn = document.getElementById('seatMapBtn');
+    const reserveBtn = document.getElementById('reserveBtn');
+    const releaseBtn = document.getElementById('releaseBtn');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const loadTicketsBtn = document.getElementById('loadTicketsBtn');
+
+    function setStatus(connected) {
+      sessionStatus.textContent = connected ? 'conectado' : 'desconectado';
+      sessionStatus.style.color = connected ? '#065f46' : '#991b1b';
+    }
+
+    function print(data) {
+      output.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    function mockSamples() {
+      return {
+        filmes: [
+          { id: 1, title: 'Filme Exemplo', genre: 'Acao', rating: 'PG-13' }
+        ],
+        sessoes: [
+          { id: 10, movie_id: 1, start_time: '2026-03-22T20:00:00Z', screen_number: 2 }
+        ],
+        seat_map: {
+          id: 10,
+          seats: [
+            { id: 101, row: 'A', number: 1, status: 'available' },
+            { id: 102, row: 'A', number: 2, status: 'reserved' },
+            { id: 103, row: 'A', number: 3, status: 'purchased' }
+          ]
+        },
+        tickets: {
+          count: 1,
+          results: [
+            { id: 'uuid-exemplo', session: { id: 10 }, seat: { row: 'A', number: 1 } }
+          ]
+        }
+      };
+    }
+
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, options);
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      const payload = isJson ? await response.json() : await response.text();
+      if (!response.ok) {
+        throw new Error(typeof payload === 'string' ? payload : JSON.stringify(payload));
+      }
+      return payload;
+    }
+
+    async function requestAuth(url, options = {}) {
+      if (!accessToken) {
+        throw new Error('Faca login antes de usar esta funcionalidade.');
+      }
+      return requestJson(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    }
+
+    function getIdsOrThrow() {
+      const sessionId = Number(document.getElementById('sessionId').value);
+      const seatId = Number(document.getElementById('seatId').value);
+      if (!sessionId || !seatId) {
+        throw new Error('Informe session_id e seat_id.');
+      }
+      return { sessionId, seatId };
+    }
+
+    registerBtn.addEventListener('click', async () => {
+      try {
+        const email = document.getElementById('regEmail').value;
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+        const data = await requestJson('/api/auth/register/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            username,
+            password,
+            password_confirm: password,
+          }),
+        });
+        print({ mensagem: 'Cadastro realizado com sucesso', usuario: data.user });
+      } catch (err) {
+        print(`Erro no cadastro: ${err.message}`);
+      }
+    });
+
+    loginBtn.addEventListener('click', async () => {
+      try {
+        const payload = {
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+        };
+        const data = await requestJson('/api/auth/login/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        accessToken = data.access;
+        refreshToken = data.refresh;
+        setStatus(true);
+        print({ mensagem: 'Login realizado com sucesso', usuario: data.user });
+      } catch (err) {
+        setStatus(false);
+        print(`Erro no login: ${err.message}`);
+      }
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+      if (!refreshToken) {
+        print('Nao ha refresh token. Faca login primeiro.');
+        return;
+      }
+
+      try {
+        const data = await requestJson('/api/auth/token/refresh/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: refreshToken }),
+        });
+        accessToken = data.access;
+        if (data.refresh) {
+          refreshToken = data.refresh;
+        }
+        setStatus(true);
+        print({ mensagem: 'Token atualizado com sucesso' });
+      } catch (err) {
+        print(`Erro ao atualizar token: ${err.message}`);
+      }
+    });
+
+    verifyTokenBtn.addEventListener('click', async () => {
+      if (!accessToken) {
+        print('Nao ha access token. Faca login primeiro.');
+        return;
+      }
+      try {
+        const data = await requestJson('/api/auth/token/verify/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: accessToken }),
+        });
+        print({ mensagem: 'Token valido', retorno: data });
+      } catch (err) {
+        print(`Token invalido: ${err.message}`);
+      }
+    });
+
+    profileBtn.addEventListener('click', async () => {
+      try {
+        const data = await requestAuth('/api/auth/profile/');
+        print({ perfil: data });
+      } catch (err) {
+        print(`Erro ao carregar perfil: ${err.message}`);
+      }
+    });
+
+    mockDataBtn.addEventListener('click', () => {
+      print({
+        mensagem: 'Exemplo mockado para referencia visual',
+        exemplo: mockSamples(),
+      });
+    });
+
+    moviesBtn.addEventListener('click', async () => {
+      try {
+        const data = await requestJson('/api/movies/');
+        if (!data.results || data.results.length === 0) {
+          print({ mensagem: 'Nenhum filme encontrado. Exibindo mock.', mock: mockSamples().filmes });
+          return;
+        }
+        print(data);
+      } catch (err) {
+        print(`Erro ao listar filmes: ${err.message}`);
+      }
+    });
+
+    sessionsByMovieBtn.addEventListener('click', async () => {
+      const movieId = Number(document.getElementById('movieId').value);
+      if (!movieId) {
+        print('Informe movie_id para listar sessoes por filme.');
+        return;
+      }
+      try {
+        const data = await requestJson(`/api/movies/${movieId}/sessions/`);
+        if (!data.results || data.results.length === 0) {
+          print({ mensagem: 'Nenhuma sessao encontrada para o filme. Exibindo mock.', mock: mockSamples().sessoes });
+          return;
+        }
+        print(data);
+      } catch (err) {
+        print(`Erro ao listar sessoes do filme: ${err.message}`);
+      }
+    });
+
+    allSessionsBtn.addEventListener('click', async () => {
+      try {
+        const data = await requestJson('/api/sessions/');
+        if (!data.results || data.results.length === 0) {
+          print({ mensagem: 'Nenhuma sessao encontrada. Exibindo mock.', mock: mockSamples().sessoes });
+          return;
+        }
+        print(data);
+      } catch (err) {
+        print(`Erro ao listar sessoes: ${err.message}`);
+      }
+    });
+
+    seatMapBtn.addEventListener('click', async () => {
+      const sessionId = Number(document.getElementById('sessionId').value);
+      if (!sessionId) {
+        print('Informe session_id para consultar mapa de assentos.');
+        return;
+      }
+      try {
+        const data = await requestJson(`/api/sessions/${sessionId}/seat-map/`);
+        if (!data.seats || data.seats.length === 0) {
+          print({ mensagem: 'Mapa vazio. Exibindo mock.', mock: mockSamples().seat_map });
+          return;
+        }
+        print(data);
+      } catch (err) {
+        print(`Erro ao carregar mapa de assentos: ${err.message}`);
+      }
+    });
+
+    reserveBtn.addEventListener('click', async () => {
+      try {
+        const { sessionId, seatId } = getIdsOrThrow();
+        const data = await requestAuth(`/api/sessions/${sessionId}/seats/${seatId}/reserve/`, {
+          method: 'POST',
+        });
+        print(data);
+      } catch (err) {
+        print(`Erro ao reservar assento: ${err.message}`);
+      }
+    });
+
+    releaseBtn.addEventListener('click', async () => {
+      try {
+        const { sessionId, seatId } = getIdsOrThrow();
+        const data = await requestAuth(`/api/sessions/${sessionId}/seats/${seatId}/release/`, {
+          method: 'DELETE',
+        });
+        print(data);
+      } catch (err) {
+        print(`Erro ao liberar assento: ${err.message}`);
+      }
+    });
+
+    checkoutBtn.addEventListener('click', async () => {
+      try {
+        const { sessionId, seatId } = getIdsOrThrow();
+        const data = await requestAuth('/api/tickets/checkout/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, seat_ids: [seatId] }),
+        });
+        print(data);
+      } catch (err) {
+        print(`Erro no checkout: ${err.message}`);
+      }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        if (refreshToken) {
+          await requestJson('/api/auth/logout/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            body: JSON.stringify({ refresh: refreshToken }),
+          });
+        }
+      } catch (err) {
+        print(`Aviso no logout: ${err.message}`);
+      } finally {
+        accessToken = '';
+        refreshToken = '';
+        setStatus(false);
+      }
+    });
+
+    loadTicketsBtn.addEventListener('click', async () => {
+      try {
+        const type = document.getElementById('ticketType').value;
+        const data = await requestAuth(`/api/tickets/my-tickets/?type=${type}`);
+        if (!data.results || data.results.length === 0) {
+          print({ mensagem: 'Nenhum ticket retornado. Exibindo mock.', mock: mockSamples().tickets });
+          return;
+        }
+        print(data);
+      } catch (err) {
+        print(`Erro ao consultar tickets: ${err.message}`);
+      }
+    });
+
+    setStatus(false);
+  </script>
+</body>
+</html>
+
